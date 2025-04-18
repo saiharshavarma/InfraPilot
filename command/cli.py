@@ -40,9 +40,6 @@ def setup_agent() -> Any:
     if "kubernetes" in enabled_toolkits:
         kubernetes_toolkit = KubernetesToolKit(llm=llm)
         tools.extend(kubernetes_toolkit.get_tools())
-    # elif "walrus" in enabled_toolkits:
-    #     walrus_toolkit = WalrusToolKit(llm=llm)
-    #     tools.extend(walrus_toolkit.get_tools())
     else:
         print(text.get("enable_no_toolkit"))
         sys.exit(1)
