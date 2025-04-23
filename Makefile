@@ -45,7 +45,7 @@ create-conda-env:
 #Defines a target named install-dependencies. This target will install the dependencies.
 install-dependencies:
 	@echo -e "$(COLOR_CYAN)Installing dependencies...$(COLOR_RESET)" && \
-	conda run -n $(CONDA_ENV_NAME) pip install -r requirements.txt >> /dev/null && \
+	conda run -n $(CONDA_ENV_NAME) pip3 install -r requirements.txt >> /dev/null && \
 	echo -e "$(COLOR_GREEN)Dependencies installed successfully.$(COLOR_RESET)"
 
 #Defines a target named farewell. This target will print a farewell message.

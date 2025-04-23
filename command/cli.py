@@ -3,8 +3,7 @@ from typing import Any
 import readline
 
 
-from langchain_openai import ChatOpenAI
-from langchain_deepseek import ChatDeepSeek
+from langchain.chat_models import ChatOpenAI
 from langchain.memory import ConversationBufferMemory
 import colorama
 
@@ -18,35 +17,15 @@ from k8s.toolkit import KubernetesToolKit
 last_error = None
 
 
-def get_llm(config):
-    """Create and return the appropriate LLM based on configuration."""
-
-    if config.infrapilot_CONFIG.model_provider == "openai":
-        return ChatOpenAI(
-            model_name=config.infrapilot_CONFIG.model_name,
-            temperature=0,
-            api_key=config.infrapilot_CONFIG.api_key,
-            # callbacks=[handlers.PrintReasoningCallbackHandler()] if config.infrapilot_CONFIG.show_reasoning else None,
-        )
-    elif config.infrapilot_CONFIG.model_provider == "deepseek":
-        return ChatDeepSeek(
-            model_name=config.infrapilot_CONFIG.model_name,
-            temperature=0,
-            api_key=config.infrapilot_CONFIG.api_key,
-        )
-    else:
-        supported_providers = ["openai", "deepseek"]
-        raise ValueError(
-            f"Unsupported model provider: {config.infrapilot_CONFIG.model_provider}. "
-            f"Supported providers: {', '.join(supported_providers)}"
-        )
-
-
 def setup_agent() -> Any:
     config.init()
     colorama.init()
 
-    llm = get_llm(config)
+    llm = ChatOpenAI(
+        model_name="gpt-4",
+        temperature=0,
+        callbacks=[handlers.PrintReasoningCallbackHandler()],
+    )
     text.init_system_messages(llm)
     memory = ConversationBufferMemory(memory_key="chat_history")
 
