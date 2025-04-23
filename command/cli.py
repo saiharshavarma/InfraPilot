@@ -3,7 +3,8 @@ from typing import Any
 import readline
 
 
-from langchain.chat_models import ChatOpenAI
+from langchain_openai import ChatOpenAI
+from langchain_deepseek import ChatDeepSeek
 from langchain.memory import ConversationBufferMemory
 import colorama
 
@@ -17,18 +18,36 @@ from k8s.toolkit import KubernetesToolKit
 last_error = None
 
 
+def get_llm(config):
+    """Create and return the appropriate LLM based on configuration."""
+
+    if config.infrapilot_CONFIG.model_provider == "openai":
+        return ChatOpenAI(
+            model_name=config.infrapilot_CONFIG.model_name,
+            temperature=0,
+            api_key=config.infrapilot_CONFIG.api_key,
+            # callbacks=[handlers.PrintReasoningCallbackHandler()] if config.infrapilot_CONFIG.show_reasoning else None,
+        )
+    elif config.infrapilot_CONFIG.model_provider == "deepseek":
+        return ChatDeepSeek(
+            model_name=config.infrapilot_CONFIG.model_name,
+            temperature=0,
+            api_key=config.infrapilot_CONFIG.api_key,
+        )
+    else:
+        supported_providers = ["openai", "deepseek"]
+        raise ValueError(
+            f"Unsupported model provider: {config.infrapilot_CONFIG.model_provider}. "
+            f"Supported providers: {', '.join(supported_providers)}"
+        )
+
+
 def setup_agent() -> Any:
     config.init()
     colorama.init()
 
-    llm = ChatOpenAI(
-        model_name="gpt-4.1-mini",
-        temperature=0,
-        callbacks=[handlers.PrintReasoningCallbackHandler()],
-    )
-
+    llm = get_llm(config)
     text.init_system_messages(llm)
-
     memory = ConversationBufferMemory(memory_key="chat_history")
 
     enabled_toolkits = [
@@ -39,23 +58,26 @@ def setup_agent() -> Any:
     if "kubernetes" in enabled_toolkits:
         kubernetes_toolkit = KubernetesToolKit(llm=llm)
         tools.extend(kubernetes_toolkit.get_tools())
-        
+
         # Add AWS toolkit if both Kubernetes and AWS are enabled
         if "aws" in enabled_toolkits:
             from aws.toolkit import AWSToolKit
+
             aws_toolkit = AWSToolKit(llm=llm)
             tools.extend(aws_toolkit.get_tools())
-    
+
     elif "aws" in enabled_toolkits:
         from aws.toolkit import AWSToolKit
+
         aws_toolkit = AWSToolKit(llm=llm)
         tools.extend(aws_toolkit.get_tools())
-    
+
     elif "docker" in enabled_toolkits:
         from docker.toolkit import DockerToolKit
+
         docker_toolkit = DockerToolKit(llm=llm)
         tools.extend(docker_toolkit.get_tools())
-    
+
     else:
         print(text.get("enable_no_toolkit"))
         sys.exit(1)
