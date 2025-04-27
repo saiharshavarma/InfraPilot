@@ -15,15 +15,15 @@ from .prompt import (
 
 class RunContainerTool(RequireApprovalTool):
     """Tool to run a Docker container via Docker CLI using LLM-generated commands."""
-    
+
     name = "run_docker_container"
-    description = (
-        "Generate and run the Docker command to create and run a container based on a natural language query."
-    )
+    description = "Generate and run the Docker command to create and run a container based on a natural language query."
     llm: BaseLanguageModel
 
     def _run(self, query: str) -> str:
-        raw = self.llm.predict(PROMPT_RUN_CONTAINER.format(query=query)).strip()
+        raw = self.llm.predict(
+            PROMPT_RUN_CONTAINER.format(query=query)
+        ).strip()
         if raw.startswith("```"):
             lines = raw.splitlines()
             raw = "\n".join(lines[1:-1])
@@ -46,15 +46,15 @@ class RunContainerTool(RequireApprovalTool):
 
 class StopContainerTool(BaseTool):
     """Tool to stop Docker containers via Docker CLI using LLM-generated commands."""
-    
+
     name = "stop_docker_container"
-    description = (
-        "Generate and run the Docker command to stop one or more running containers based on a natural language query."
-    )
+    description = "Generate and run the Docker command to stop one or more running containers based on a natural language query."
     llm: BaseLanguageModel
 
     def _run(self, query: str) -> str:
-        raw = self.llm.predict(PROMPT_STOP_CONTAINER.format(query=query)).strip()
+        raw = self.llm.predict(
+            PROMPT_STOP_CONTAINER.format(query=query)
+        ).strip()
         if raw.startswith("```"):
             lines = raw.splitlines()
             raw = "\n".join(lines[1:-1])
@@ -77,15 +77,15 @@ class StopContainerTool(BaseTool):
 
 class RemoveContainerTool(BaseTool):
     """Tool to remove Docker containers via Docker CLI using LLM-generated commands."""
-    
+
     name = "remove_docker_container"
-    description = (
-        "Generate and run the Docker command to remove one or more containers based on a natural language query."
-    )
+    description = "Generate and run the Docker command to remove one or more containers based on a natural language query."
     llm: BaseLanguageModel
 
     def _run(self, query: str) -> str:
-        raw = self.llm.predict(PROMPT_REMOVE_CONTAINER.format(query=query)).strip()
+        raw = self.llm.predict(
+            PROMPT_REMOVE_CONTAINER.format(query=query)
+        ).strip()
         if raw.startswith("```"):
             lines = raw.splitlines()
             raw = "\n".join(lines[1:-1])
@@ -108,15 +108,15 @@ class RemoveContainerTool(BaseTool):
 
 class ExecContainerTool(BaseTool):
     """Tool to execute commands in Docker containers via Docker CLI using LLM-generated commands."""
-    
+
     name = "exec_docker_container"
-    description = (
-        "Generate and run the Docker command to execute a command in a running container based on a natural language query."
-    )
+    description = "Generate and run the Docker command to execute a command in a running container based on a natural language query."
     llm: BaseLanguageModel
 
     def _run(self, query: str) -> str:
-        raw = self.llm.predict(PROMPT_EXEC_CONTAINER.format(query=query)).strip()
+        raw = self.llm.predict(
+            PROMPT_EXEC_CONTAINER.format(query=query)
+        ).strip()
         if raw.startswith("```"):
             lines = raw.splitlines()
             raw = "\n".join(lines[1:-1])
@@ -139,15 +139,15 @@ class ExecContainerTool(BaseTool):
 
 class LogsContainerTool(BaseTool):
     """Tool to get logs from Docker containers via Docker CLI using LLM-generated commands."""
-    
+
     name = "logs_docker_container"
-    description = (
-        "Generate and run the Docker command to fetch logs from a container based on a natural language query."
-    )
+    description = "Generate and run the Docker command to fetch logs from a container based on a natural language query."
     llm: BaseLanguageModel
 
     def _run(self, query: str) -> str:
-        raw = self.llm.predict(PROMPT_LOGS_CONTAINER.format(query=query)).strip()
+        raw = self.llm.predict(
+            PROMPT_LOGS_CONTAINER.format(query=query)
+        ).strip()
         if raw.startswith("```"):
             lines = raw.splitlines()
             raw = "\n".join(lines[1:-1])
@@ -170,7 +170,7 @@ class LogsContainerTool(BaseTool):
 
 class ListContainersTool(BaseTool):
     """Tool to list Docker containers."""
-    
+
     name = "list_docker_containers"
     description = (
         "List Docker containers. "
@@ -181,11 +181,11 @@ class ListContainersTool(BaseTool):
     def _run(self, text: str) -> str:
         input_data = json.loads(text)
         all_containers = input_data.get("all", False)
-        
+
         cmd = "docker ps"
         if all_containers:
             cmd += " -a"
-            
+
         try:
             result = subprocess.run(
                 cmd,
@@ -203,16 +203,16 @@ class ListContainersTool(BaseTool):
 
 class InspectContainerTool(BaseTool):
     """Tool to inspect Docker containers."""
-    
+
     name = "inspect_docker_container"
     description = (
         "Inspect a Docker container to get detailed information about it. "
-        'Input should be a string with the container ID or name.'
+        "Input should be a string with the container ID or name."
     )
 
     def _run(self, container_id: str) -> str:
         cmd = f"docker inspect {container_id}"
-            
+
         try:
             result = subprocess.run(
                 cmd,
