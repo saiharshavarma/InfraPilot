@@ -12,7 +12,6 @@ from config import config
 from i18n import text
 from utils import utils
 from agent.agent import create_agent
-# from walrus.toolkit import WalrusToolKit
 from k8s.toolkit import KubernetesToolKit
 
 last_error = None
@@ -27,9 +26,7 @@ def setup_agent() -> Any:
         temperature=0,
         callbacks=[handlers.PrintReasoningCallbackHandler()],
     )
-
     text.init_system_messages(llm)
-
     memory = ConversationBufferMemory(memory_key="chat_history")
 
     enabled_toolkits = [
@@ -40,13 +37,26 @@ def setup_agent() -> Any:
     if "kubernetes" in enabled_toolkits:
         kubernetes_toolkit = KubernetesToolKit(llm=llm)
         tools.extend(kubernetes_toolkit.get_tools())
-        from aws.toolkit import AWSToolKit
-        aws_toolkit = AWSToolKit(llm=llm)
-        tools.extend(aws_toolkit.get_tools())
+
+        # Add AWS toolkit if both Kubernetes and AWS are enabled
+        if "aws" in enabled_toolkits:
+            from aws.toolkit import AWSToolKit
+
+            aws_toolkit = AWSToolKit(llm=llm)
+            tools.extend(aws_toolkit.get_tools())
+
     elif "aws" in enabled_toolkits:
         from aws.toolkit import AWSToolKit
+
         aws_toolkit = AWSToolKit(llm=llm)
         tools.extend(aws_toolkit.get_tools())
+
+    elif "docker" in enabled_toolkits:
+        from docker.toolkit import DockerToolKit
+
+        docker_toolkit = DockerToolKit(llm=llm)
+        tools.extend(docker_toolkit.get_tools())
+
     else:
         print(text.get("enable_no_toolkit"))
         sys.exit(1)

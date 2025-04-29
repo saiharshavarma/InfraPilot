@@ -8,8 +8,6 @@ from dotenv import load_dotenv
 
 
 class Config(BaseModel):
-    openai_api_key: str
-    openai_api_base: str
     natural_language: str
     toolkits: list[str]
     show_reasoning: bool
