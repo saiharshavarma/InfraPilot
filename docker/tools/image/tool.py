@@ -3,13 +3,15 @@ from typing import Any
 import json
 from langchain.schema.language_model import BaseLanguageModel
 from langchain.agents.tools import BaseTool
+from tools.base.tools import RequireApprovalTool
 from .prompt import (
     PROMPT_PULL_IMAGE,
-    PROMPT_BUILD_IMAGE,
     PROMPT_REMOVE_IMAGE,
     PROMPT_TAG_IMAGE,
     PROMPT_PUSH_IMAGE,
 )
+import os
+import tempfile
 
 
 class PullImageTool(BaseTool):
@@ -43,33 +45,75 @@ class PullImageTool(BaseTool):
             return f"Exception: {e}"
 
 
-class BuildImageTool(BaseTool):
-    """Tool to build Docker images via Docker CLI using LLM-generated commands."""
+class BuildImageTool(RequireApprovalTool):
+    """Tool to build Docker images from a GitHub repository."""
     
     name = "build_docker_image"
     description = (
-        "Generate and run the Docker command to build an image from a Dockerfile based on a natural language query."
+        "Build a Docker image from a GitHub repository URL. "
+        "Input should be a json string with at least a 'repo_url' key. "
+        "Optional keys include 'image_name', 'tag', and 'dockerfile_path'."
     )
     llm: BaseLanguageModel
-
-    def _run(self, query: str) -> str:
-        raw = self.llm.predict(PROMPT_BUILD_IMAGE.format(query=query)).strip()
-        if raw.startswith("```"):
-            lines = raw.splitlines()
-            raw = "\n".join(lines[1:-1])
-        cmd = raw.strip()
-
+    
+    def _run(self, text: str) -> str:
+        import json
+        
         try:
-            result = subprocess.run(
-                cmd,
-                shell=True,
-                stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE,
-                text=True,
-            )
-            if result.returncode == 0:
-                return f"Image built successfully: {result.stdout}"
-            return f"Error: {result.stderr}"
+            input_data = json.loads(text)
+            repo_url = input_data.get("repo_url")
+            image_name = input_data.get("image_name", "")
+            tag = input_data.get("tag", "latest")
+            dockerfile_path = input_data.get("dockerfile_path", "Dockerfile")
+            
+            if not repo_url:
+                return "Error: GitHub repository URL is required"
+            
+            # Default image name based on repo if not provided
+            if not image_name:
+                repo_parts = repo_url.rstrip("/").split("/")
+                if len(repo_parts) > 1:
+                    image_name = repo_parts[-1]
+                else:
+                    return "Error: Could not determine image name from repo URL. Please provide an image_name."
+            
+            # Create a temporary directory for cloning
+            with tempfile.TemporaryDirectory() as temp_dir:
+                # Clone the repository
+                clone_cmd = f"git clone {repo_url} {temp_dir}"
+                clone_result = subprocess.run(
+                    clone_cmd, 
+                    shell=True, 
+                    stdout=subprocess.PIPE, 
+                    stderr=subprocess.PIPE, 
+                    text=True
+                )
+                
+                if clone_result.returncode != 0:
+                    return f"Error cloning repository: {clone_result.stderr}"
+                
+                # Check if Dockerfile exists
+                dockerfile_fullpath = os.path.join(temp_dir, dockerfile_path)
+                if not os.path.exists(dockerfile_fullpath):
+                    return f"Error: Dockerfile not found at {dockerfile_path} in the repository"
+                
+                # Build the Docker image
+                build_cmd = f"docker build -t {image_name}:{tag} -f {dockerfile_fullpath} {temp_dir}"
+                build_result = subprocess.run(
+                    build_cmd, 
+                    shell=True, 
+                    stdout=subprocess.PIPE, 
+                    stderr=subprocess.PIPE, 
+                    text=True
+                )
+                
+                if build_result.returncode != 0:
+                    return f"Error building Docker image: {build_result.stderr}"
+                
+                return f"Successfully built Docker image {image_name}:{tag} from {repo_url}"
+                
+        except json.JSONDecodeError:
+            return "Error: Input is not valid JSON"
         except Exception as e:
             return f"Exception: {e}"
 

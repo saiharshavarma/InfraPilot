@@ -10,14 +10,14 @@ DOCKER COMMAND:
 """
 
 PROMPT_BUILD_IMAGE = """
-You are an AI assistant that helps generate Docker commands for image operations.
-Generate a Docker command (`docker build`) to build a Docker image from a Dockerfile from a single natural language instruction.
-Do not include explanations—only the command.
+You are an AI assistant that helps generate Docker build commands.
+Generate a docker build command based on a natural language instruction.
+Do not include any explanations—only the command.
 
 USER QUERY:
 {query}
 
-DOCKER COMMAND:
+DOCKER BUILD COMMAND:
 """
 
 PROMPT_REMOVE_IMAGE = """
