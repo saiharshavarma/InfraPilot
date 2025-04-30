@@ -1,5 +1,6 @@
 from typing import Any, Dict, Optional
 
+from langchain.tools import Tool
 from langchain.tools import BaseTool
 from langchain.agents.agent import AgentExecutor
 from langchain.agents.conversational.base import ConversationalAgent
@@ -36,6 +37,18 @@ def create_agent(
     ]
 
     tools.extend(system_tools)
+
+    if config.infrapilot_CONFIG.RAG_ENABLED:
+        from rag.ingest import ingest_documentation
+        ingest_documentation(source_dir="docs")
+        from rag.rag_chain import create_rag_chain
+        rag_chain = create_rag_chain(k=3)
+        docs_tool = Tool(
+            name="documentation_search",
+            func=lambda q: rag_chain.run(q),
+            description="Retrieve up-to-date Kubernetes/AWS documentation snippets"
+        )
+        tools.append(docs_tool)
 
     format_instructions = FORMAT_INSTRUCTIONS_TEMPLATE.format(
         natural_language=config.infrapilot_CONFIG.natural_language

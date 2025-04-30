@@ -21,6 +21,10 @@ def setup_agent() -> Any:
     config.init()
     colorama.init()
 
+    if config.infrapilot_CONFIG.RAG_ENABLED:
+        from rag.ingest import ingest_documentation
+        ingest_documentation(source_dir="docs")
+
     llm = ChatOpenAI(
         model_name="gpt-4",
         temperature=0,
@@ -38,12 +42,10 @@ def setup_agent() -> Any:
         kubernetes_toolkit = KubernetesToolKit(llm=llm)
         tools.extend(kubernetes_toolkit.get_tools())
 
-        # Add AWS toolkit if both Kubernetes and AWS are enabled
-        if "aws" in enabled_toolkits:
-            from aws.toolkit import AWSToolKit
+        from aws.toolkit import AWSToolKit
 
-            aws_toolkit = AWSToolKit(llm=llm)
-            tools.extend(aws_toolkit.get_tools())
+        aws_toolkit = AWSToolKit(llm=llm)
+        tools.extend(aws_toolkit.get_tools())
 
     elif "aws" in enabled_toolkits:
         from aws.toolkit import AWSToolKit
