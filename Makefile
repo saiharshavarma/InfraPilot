@@ -28,7 +28,7 @@ install: create-venv upgrade-pip install-dependencies farewell
 #Defines a target named create-venv. This target will create a virtual environment in the .venv folder.
 create-venv:
 	@echo -e "$(COLOR_CYAN)Creating virtual environment...$(COLOR_RESET)" && \
-	python3 -m venv .venv
+	python3.10 -m venv .venv
 
 #Defines a target named upgrade-pip. This target will upgrade pip to the latest version.
 upgrade-pip:
@@ -53,4 +53,4 @@ lint:
 run:
 	@echo -e "$(COLOR_CYAN)Running infrapilot...$(COLOR_RESET)" && \
 	source .venv/bin/activate && \
-	python3 app.py
+	python3.10 app.py

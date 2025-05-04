@@ -10,11 +10,16 @@ from .tools.s3.tool import (
     ListS3BucketsTool,
     UploadS3ObjectTool,
     DeleteS3ObjectTool,
+
 )
 from .tools.dynamodb.tool import (
     CreateDynamoDBTableTool,
     PutDynamoDBItemTool,
     GetDynamoDBItemTool,
+)
+from .tools.cloudformation.tool import (
+    GenerateCloudFormationTemplateTool,
+    DeployCloudFormationStackTool,
 )
 
 class AWSToolKit:
@@ -36,6 +41,7 @@ class AWSToolKit:
             ListS3BucketsTool(llm=self.llm, s3_client=s3_client),
             UploadS3ObjectTool(llm=self.llm, s3_client=s3_client),
             DeleteS3ObjectTool(llm=self.llm, s3_client=s3_client),
+
             # DynamoDB
             CreateDynamoDBTableTool(llm=self.llm, dynamodb_client=dynamodb_client),
             PutDynamoDBItemTool(llm=self.llm, dynamodb_client=dynamodb_client),
