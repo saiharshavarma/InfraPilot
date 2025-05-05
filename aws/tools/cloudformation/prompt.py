@@ -18,7 +18,7 @@ produce a complete, valid CloudFormation template in YAML.
   - Do NOT include ProvisionedThroughput when using BillingMode: PAY_PER_REQUEST.
   - If BillingMode is PAY_PER_REQUEST, do NOT add Read/WriteCapacityUnits.
   - The KeySchema must include at least one HASH key; SORT key is optional.
-  
+
 • Supported AWS resource types include but are not limited to:
   - AWS::S3::Bucket
     • BucketName must contain only lowercase letters, numbers, and hyphens.
@@ -35,6 +35,12 @@ produce a complete, valid CloudFormation template in YAML.
     • Specify the Handler, Runtime, Role, and Code (S3 location or inline).
   - AWS::VPC::VPC and AWS::EC2::Subnet
     • Define CIDR blocks and associate subnets with availability zones.
+    
+• When generating multiple resources (e.g., S3, DynamoDB, API Gateway, IAM Role), make sure they are connected:
+  - The IAM Role should have permissions to access the S3 bucket and the DynamoDB table
+  - The API Gateway should be integrated with the DynamoDB table (e.g., via a request integration)
+  - Use meaningful logical names and consistent naming conventions
+  - Ensure all resources are valid and interconnected in a realistic way
 
 • Do not include explanations—only output the raw YAML.
 
