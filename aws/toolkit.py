@@ -21,6 +21,7 @@ from .tools.cloudformation.tool import (
     GenerateCloudFormationTemplateTool,
     DeployCloudFormationStackTool,
 )
+from .tools.cloudformation.delete_tool import DeleteCloudFormationStackTool
 
 class AWSToolKit:
     """AWS toolkit for Infrapilot: provides EC2, S3 and DynamoDB operations via LLM-driven tools."""
@@ -46,4 +47,9 @@ class AWSToolKit:
             CreateDynamoDBTableTool(llm=self.llm, dynamodb_client=dynamodb_client),
             PutDynamoDBItemTool(llm=self.llm, dynamodb_client=dynamodb_client),
             GetDynamoDBItemTool(llm=self.llm, dynamodb_client=dynamodb_client),
+            # CloudFormation
+            GenerateCloudFormationTemplateTool(llm=self.llm),
+            DeployCloudFormationStackTool(llm=self.llm),
+            DeleteCloudFormationStackTool(llm=self.llm),
+
         ]

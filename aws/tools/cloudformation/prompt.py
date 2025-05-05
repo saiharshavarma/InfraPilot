@@ -9,8 +9,34 @@ produce a complete, valid CloudFormation template in YAML.
   - AWSTemplateFormatVersion: '2010-09-09'
   - Description: brief one-line summary
   - Resources: with logical names matching the user's intent
-• Use the AWS_REGION environment variable implicitly for any region-specific mappings.
-• Do not include any explanations—only output the raw YAML.
+
+• S3 Bucket:
+  - BucketName must only contain lowercase letters, numbers, and hyphens.
+  - You may automatically generate a unique name using `cf-bucket-<user>-<date>-<suffix>` if not provided.
+
+• DynamoDB Table:
+  - Do NOT include ProvisionedThroughput when using BillingMode: PAY_PER_REQUEST.
+  - If BillingMode is PAY_PER_REQUEST, do NOT add Read/WriteCapacityUnits.
+  - The KeySchema must include at least one HASH key; SORT key is optional.
+  
+• Supported AWS resource types include but are not limited to:
+  - AWS::S3::Bucket
+    • BucketName must contain only lowercase letters, numbers, and hyphens.
+    • You may auto-generate a name like `cf-bucket-<user>-<date>-<suffix>` if unspecified.
+  - AWS::DynamoDB::Table
+    • Must include a KeySchema with at least a HASH key.
+    • If using BillingMode: PAY_PER_REQUEST, do not include ProvisionedThroughput.
+  - AWS::EC2::Instance
+    • Specify InstanceType, ImageId (AMI), and KeyName if required.
+    • You may place it in a VPC or specify a SecurityGroup.
+  - AWS::IAM::Role
+    • Include AssumeRolePolicyDocument and list of managed policies if needed.
+  - AWS::Lambda::Function
+    • Specify the Handler, Runtime, Role, and Code (S3 location or inline).
+  - AWS::VPC::VPC and AWS::EC2::Subnet
+    • Define CIDR blocks and associate subnets with availability zones.
+
+• Do not include explanations—only output the raw YAML.
 
 USER QUERY:
 {query}
@@ -23,8 +49,9 @@ You are an AI assistant that helps generate AWS CLI commands to deploy CloudForm
 Generate a single AWS CLI command (`aws cloudformation deploy`) to deploy the CloudFormation template
 file at `template.yaml` into a stack based on a natural language instruction.
 
-• Use the AWS_REGION environment variable for --region.
+• If the user specifies a region, include it using `--region us-east-1`.
 • If the user names a stack, use that name; otherwise default to 'MyStack'.
+• Always include --capabilities CAPABILITY_NAMED_IAM.
 • Do not include explanations—only output the AWS CLI command.
 
 USER QUERY:
