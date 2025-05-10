@@ -30,7 +30,6 @@ def get_env_list(key: str, default: [] = []) -> list[str]:
         return default
     return [item.strip() for item in env.split(",")]
 
-
 def get_env_bool(key: str, default: bool = False) -> bool:
     env = os.getenv(key)
     if env is None:

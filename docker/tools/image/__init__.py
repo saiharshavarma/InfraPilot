@@ -1,0 +1,1 @@
+"""Tool for managing Docker images."""

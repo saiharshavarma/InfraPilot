@@ -9,11 +9,13 @@ botocore==1.37.37
 cachetools==5.3.1
 certifi==2023.7.22
 charset-normalizer==3.2.0
+chromadb
 click==8.1.6
 colorama==0.4.6
 dataclasses-json==0.5.14
 exceptiongroup==1.1.2
 fastapi==0.100.1
+faiss-cpu
 frozenlist==1.4.0
 google-auth==2.22.0
 h11==0.14.0
@@ -21,7 +23,7 @@ httptools==0.6.0
 idna==3.4
 jmespath==1.0.1
 kubernetes==27.2.0
-langchain==0.0.271
+langchain
 langsmith==0.0.26
 markdown-it-py==3.0.0
 marshmallow==3.20.1
@@ -59,6 +61,8 @@ tenacity==8.2.2
 tqdm==4.65.0
 typing-inspect==0.9.0
 typing_extensions==4.7.1
+tiktoken
+unstructured
 urllib3==1.26.16
 uvicorn==0.23.2
 uvloop==0.17.0
