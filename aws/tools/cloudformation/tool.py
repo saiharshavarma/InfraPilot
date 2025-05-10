@@ -14,7 +14,6 @@ from .prompt import (
     PROMPT_DEPLOY_CLOUDFORMATION_STACK,
 )
 
-
 class GenerateCloudFormationTemplateTool(BaseTool):
     name = "generate_cloudformation_template"
     description = (
@@ -88,11 +87,21 @@ class DeployCloudFormationStackTool(BaseTool):
         import json
         import time
 
+        # First check if AWS CLI connection is working
+        aws_check_cmd = "aws sts get-caller-identity"
+        aws_check_result = subprocess.run(
+            aws_check_cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True
+        )
+        
+        # Check if AWS CLI connection is properly established
+        if aws_check_result.returncode != 0:
+            return f"Error: AWS CLI connection failed. Please check your AWS credentials and network connection.\nError details: {aws_check_result.stderr}"
+
         raw = self.llm.predict(
             PROMPT_DEPLOY_CLOUDFORMATION_STACK.format(query=query)
         ).strip()
 
-        # 清除 markdown 格式的包裹行
+        # Clear markdown formatting
         lines = raw.strip().splitlines()
         if lines and lines[0].strip().startswith("```"):
             lines = lines[1:]
@@ -102,81 +111,79 @@ class DeployCloudFormationStackTool(BaseTool):
 
         print("Generated AWS CLI command:", cmd)
         
-        # 从命令中提取stack-name参数
+        # Extract stack-name parameter from command
         stack_name_match = re.search(r'--stack-name\s+(\S+)', cmd)
         if not stack_name_match:
             return "Error: Could not find stack name in the command."
         
         stack_name = stack_name_match.group(1)
         
-        # 从命令中提取region参数，如果有的话
+        # Extract region parameter if present
         region_match = re.search(r'--region\s+(\S+)', cmd)
         region_param = f"--region {region_match.group(1)}" if region_match else ""
 
         try:
+            # Execute deployment command
             result = subprocess.run(
-            cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True
+                cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True
             )
 
-            # 检查是否有成功信息
-            if result.returncode == 0:
-                return "CloudFormation stack deployment succeeded."
-
-            # 检查一些特定的成功情况
-            if "No changes to deploy" in result.stderr:
+            # Check deployment command execution results
+            if result.returncode != 0:
+                # Command failed, return error message
+                return f"Error during deployment:\n{result.stderr}"
+            
+            # Command executed successfully, but we need to verify if the stack was actually created/updated
+            if "No changes to deploy" in result.stdout or "No changes to deploy" in result.stderr:
                 return "Stack is already up-to-date. No changes were made."
                 
-            # 提取stack-name和region（如果有）
-            stack_name_match = re.search(r'--stack-name\s+(\S+)', cmd)
-            if stack_name_match:
-                stack_name = stack_name_match.group(1)
-                region_match = re.search(r'--region\s+(\S+)', cmd)
-                region_param = f"--region {region_match.group(1)}" if region_match else ""
-                
-                # 检查栈是否实际存在
-                check_cmd = f"aws cloudformation describe-stacks --stack-name {stack_name} {region_param}"
-                check_result = subprocess.run(
-                    check_cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True
-                )
-                
-                if check_result.returncode == 0:
-                    # 栈确实存在，部署可能已经成功
-                    return "CloudFormation stack exists despite reported errors. Deployment appears to be successful."
-            return f"Error during deployment:\n{result.stderr}"
-            # 部署命令成功，等待栈创建完成
+            # Verify stack status
             max_attempts = 5
             attempts = 0
+            
             while attempts < max_attempts:
                 attempts += 1
+                print(f"Checking stack status, attempt {attempts}/{max_attempts}...")
+                
                 check_cmd = f"aws cloudformation describe-stacks --stack-name {stack_name} {region_param}"
                 check_result = subprocess.run(
                     check_cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True
                 )
                 
                 if check_result.returncode != 0:
+                    # If stack description command fails, usually means the stack doesn't exist or there's a permission issue
+                    if "Stack with id" in check_result.stderr and "does not exist" in check_result.stderr:
+                        return f"Error: Stack '{stack_name}' was not created. Please check your AWS permissions and configuration."
                     return f"Error checking stack status:\n{check_result.stderr}"
                     
                 try:
                     stack_info = json.loads(check_result.stdout)
-                    status = stack_info["Stacks"][0]["StackStatus"]
+                    if not stack_info.get("Stacks") or len(stack_info["Stacks"]) == 0:
+                        return f"Error: Stack '{stack_name}' information could not be retrieved properly."
                     
+                    status = stack_info["Stacks"][0]["StackStatus"]
+                    print(f"Current stack status: {status}")
+                    
+                    # Check final status
                     if status.endswith("_COMPLETE"):
                         if status == "CREATE_COMPLETE" or status == "UPDATE_COMPLETE":
                             return "CloudFormation stack deployment succeeded."
                         else:
                             return f"Stack deployment completed with status: {status}"
                             
-                    if status.endswith("_FAILED"):
-                        return f"Stack deployment failed with status: {status}"
-                        
-                    # 栈仍在创建中，等待并再次检查
-                    print(f"Stack is in {status} state. Waiting...")
-                    time.sleep(10)  # 等待10秒后再检查
+                    if status.endswith("_FAILED") or "ROLLBACK" in status:
+                        # Get failure reason
+                        reason = stack_info["Stacks"][0].get("StackStatusReason", "No reason provided")
+                        return f"Stack deployment failed with status: {status}\nReason: {reason}"
+                    
+                    # Stack is still being created/updated, wait and check again
+                    print(f"[INFO] Stack is in {status} state. Waiting...")
+                    time.sleep(10)  # Wait 10 seconds before checking again
                     
                 except (json.JSONDecodeError, KeyError, IndexError) as e:
-                    return f"Error parsing stack status: {e}"
+                    return f"Error parsing stack status: {e}\nRaw output: {check_result.stdout[:200]}..."
                     
             return "CloudFormation stack deployment initiated, but final status could not be determined in the timeout period. Please check AWS console."
 
         except Exception as e:
-            return f"Exception occurred:\n{e}"
+            return f"Exception occurred during deployment:\n{e}"
