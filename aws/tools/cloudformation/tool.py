@@ -3,6 +3,7 @@ import re
 import yaml
 import random
 import string
+import json
 import os
 import time
 from collections import OrderedDict
@@ -180,3 +181,47 @@ class DeployCloudFormationStackTool(BaseTool):
 
         except Exception as e:
             return f"Exception occurred:\n{e}"
+        
+
+
+class ListCloudFormationStacksTool(BaseTool):
+    name = "list_cloudformation_stacks"
+    description = (
+        "List all AWS CloudFormation stacks and their statuses. "
+        "You can optionally specify a region by including `--region <region>` in the query."
+    )
+    llm: BaseLanguageModel
+
+    def _run(self, query: str) -> str:
+        # extract region if provided
+        region_match = re.search(r'--region\s+(\S+)', query)
+        region_param = f"--region {region_match.group(1)}" if region_match else ""
+
+        # use AWS CLI to list stacks
+        cmd = (
+            f"aws cloudformation list-stacks {region_param} "
+            "--stack-status-filter CREATE_COMPLETE UPDATE_COMPLETE ROLLBACK_COMPLETE UPDATE_ROLLBACK_COMPLETE"
+        )
+        try:
+            result = subprocess.run(
+                cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True
+            )
+            if result.returncode != 0:
+                return f"Error listing stacks:\n{result.stderr.strip()}"
+
+            data = json.loads(result.stdout)
+            summaries = data.get("StackSummaries", [])
+            if not summaries:
+                return "No stacks found."
+
+            # format output
+            lines = []
+            for s in summaries:
+                name   = s.get("StackName", "<unknown>")
+                status = s.get("StackStatus", "<unknown>")
+                updated = s.get("LastUpdatedTime") or s.get("CreationTime")
+                lines.append(f"- {name}: {status} (last update: {updated})")
+            return "CloudFormation Stacks:\n" + "\n".join(lines)
+
+        except Exception as e:
+            return f"Exception occurred while listing stacks:\n{e}"

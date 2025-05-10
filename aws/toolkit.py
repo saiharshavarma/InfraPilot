@@ -20,6 +20,7 @@ from .tools.dynamodb.tool import (
 from .tools.cloudformation.tool import (
     GenerateCloudFormationTemplateTool,
     DeployCloudFormationStackTool,
+    ListCloudFormationStacksTool,
 )
 from .tools.cloudformation.delete_tool import DeleteCloudFormationStackTool
 
@@ -51,5 +52,5 @@ class AWSToolKit:
             GenerateCloudFormationTemplateTool(llm=self.llm),
             DeployCloudFormationStackTool(llm=self.llm),
             DeleteCloudFormationStackTool(llm=self.llm),
-
+            ListCloudFormationStacksTool(llm=self.llm),
         ]
