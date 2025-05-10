@@ -21,4 +21,5 @@ __pycache__/
 
 .DS_Store
 *.swp
-
+.chromadb/
+.chromadb/chromadb.sqlite3
