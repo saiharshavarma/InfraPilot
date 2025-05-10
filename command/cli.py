@@ -47,19 +47,19 @@ def setup_agent() -> Any:
         aws_toolkit = AWSToolKit(llm=llm)
         tools.extend(aws_toolkit.get_tools())
 
-    elif "aws" in enabled_toolkits:
+    if "aws" in enabled_toolkits:
         from aws.toolkit import AWSToolKit
 
         aws_toolkit = AWSToolKit(llm=llm)
         tools.extend(aws_toolkit.get_tools())
 
-    elif "docker" in enabled_toolkits:
+    if "docker" in enabled_toolkits:
         from docker.toolkit import DockerToolKit
 
         docker_toolkit = DockerToolKit(llm=llm)
         tools.extend(docker_toolkit.get_tools())
 
-    else:
+    if not enabled_toolkits:
         print(text.get("enable_no_toolkit"))
         sys.exit(1)
 
